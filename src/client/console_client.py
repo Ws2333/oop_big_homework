@@ -76,68 +76,91 @@ class ConsoleClient:
             parts = cmd.split()
             action = parts[0].lower()
 
-            try:
-                if action == "help":
-                    self._print_help()
-                elif action == "move":
-                    if len(parts) != 3:
-                        print("用法: move x y （x 和 y 为从 0 开始的行列索引）")
-                        continue
-                    try:
-                        x = int(parts[1])
-                        y = int(parts[2])
-                    except ValueError:
-                        print("坐标需为整数。")
-                        continue
-                    try:
-                        game.make_move(x, y)
-                    except Exception as e:
-                        print(f"落子失败: {e}")
-                        continue
-                elif action == "pass":
-                    # pass only for games that support it
-                    try:
-                        game.pass_turn()
-                    except NotImplementedError:
-                        print("此游戏不支持 pass。")
-                    except Exception as e:
-                        print(f"pass 失败: {e}")
-                elif action == "undo":
-                    try:
-                        game.undo()
-                    except Exception as e:
-                        print(f"无法悔棋: {e}")
-                elif action == "resign":
-                    try:
-                        game.resign()
-                    except Exception as e:
-                        print(f"认输失败: {e}")
-                elif action == "save":
-                    if len(parts) != 2:
-                        print("用法: save filename")
-                        continue
+            # 每个命令分别处理常见错误并给出友好提示，保证循环不中断
+            if action == "help":
+                self._print_help()
+            elif action == "move":
+                if len(parts) != 3:
+                    print("用法: move x y （x 和 y 为从 0 开始的行列索引）")
+                    continue
+                try:
+                    x = int(parts[1])
+                    y = int(parts[2])
+                except ValueError:
+                    print("坐标需为整数。")
+                    continue
+                try:
+                    game.make_move(x, y)
+                except ValueError as e:
+                    # 包括非法位置、禁手或自杀等由游戏层抛出的错误
+                    print(f"落子失败（无效位置或规则不允许）: {e}")
+                    continue
+                except Exception as e:
+                    print(f"落子失败: {e}")
+                    continue
+            elif action == "pass":
+                try:
+                    game.pass_turn()
+                except NotImplementedError:
+                    print("此游戏不支持 pass。")
+                except ValueError as e:
+                    print(f"pass 失败: {e}")
+                except Exception as e:
+                    print(f"pass 失败: {e}")
+            elif action == "undo":
+                try:
+                    game.undo()
+                except ValueError as e:
+                    # 例如没有可悔棋的步数
+                    print(f"无法悔棋: {e}")
+                except Exception as e:
+                    print(f"无法悔棋: {e}")
+            elif action == "resign":
+                try:
+                    game.resign()
+                except Exception as e:
+                    print(f"认输失败: {e}")
+            elif action == "save":
+                if len(parts) != 2:
+                    print("用法: save filename")
+                    continue
+                try:
                     self._save_game(game, parts[1], game_type)
-                elif action == "load":
-                    if len(parts) != 2:
-                        print("用法: load filename")
-                        continue
+                except IOError as e:
+                    print(f"保存失败（IO 错误）: {e}")
+                except Exception as e:
+                    print(f"保存失败: {e}")
+            elif action == "load":
+                if len(parts) != 2:
+                    print("用法: load filename")
+                    continue
+                try:
                     loaded = self._load_game(parts[1])
-                    if loaded is None:
-                        print("加载失败。")
-                        continue
-                    game, game_type = loaded
-                elif action == "restart":
-                    print("回到主菜单。")
-                    return
-                elif action == "quit":
-                    print("退出程序。")
-                    raise SystemExit
-                else:
-                    print("未知命令，输入 'help' 查看帮助。")
-            except SystemExit:
-                raise
-            except Exception as exc:
-                print(f"命令执行出错: {exc}")
+                except FileNotFoundError:
+                    print("加载失败: 文件不存在。")
+                    continue
+                except IOError as e:
+                    print(f"加载失败（IO 错误）: {e}")
+                    continue
+                except ValueError as e:
+                    print(f"加载失败: {e}")
+                    continue
+                except Exception as e:
+                    print(f"加载失败: {e}")
+                    continue
+
+                if loaded is None:
+                    print("加载失败。")
+                    continue
+                game, game_type = loaded
+            elif action == "restart":
+                print("回到主菜单。")
+                return
+            elif action == "quit":
+                print("退出程序。")
+                raise SystemExit
+            else:
+                print("未知命令，输入 'help' 查看帮助。")
 
             # check end of game
             if game.is_over():
