@@ -8,6 +8,8 @@ for basic unit tests; it doesn't implement captures or scoring.
 from __future__ import annotations
 
 from src.core.game import Game
+from src.core.board import Board
+from src.core.player import Player
 
 
 class GoGame(Game):
@@ -17,6 +19,10 @@ class GoGame(Game):
 	The class does not implement capture or scoring; it exists to validate
 	the factory and base game behavior.
 	"""
+
+	def __init__(self, size: int, black_player: Player, white_player: Player):
+		board = Board(size)
+		super().__init__(board, black_player, white_player)
 
 	def make_move(self, row: int, col: int) -> None:
 		# Place stone via base helper.

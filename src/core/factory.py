@@ -44,9 +44,8 @@ class GameFactory:
 		game_cls: Type[Game] = GameFactory._registry.get(normalized)
 		if game_cls is None:
 			raise ValueError(f"Unknown game type: {game_type}")
-		board = Board(size)
 		# create two default players: Black and White
 		black = Player("Black", "black")
 		white = Player("White", "white")
-		return game_cls(board, black, white)
+		return game_cls(size, black, white)
 
